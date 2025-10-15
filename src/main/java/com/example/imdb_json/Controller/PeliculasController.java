@@ -1,6 +1,7 @@
 package com.example.imdb_json.Controller;
 
 import com.example.imdb_json.Class.Pelicula;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
@@ -14,6 +15,8 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.Arrays;
+import java.util.List;
 
 public class PeliculasController {
 
@@ -33,6 +36,8 @@ public class PeliculasController {
     private TextField txtTitulo;
 
     private final ObservableList<Pelicula> peliculas = FXCollections.observableArrayList();
+
+    private static final ObjectMapper json_mapper = new ObjectMapper();
 
     @FXML
     public void initialize(){
@@ -67,7 +72,30 @@ public class PeliculasController {
                 return;
             }
 
-            //Leer JSON con gson
+            ObjectMapper mapper = new ObjectMapper();
+
+            // Leemos el JSON como un Map genérico
+            java.util.Map<?, ?> root = mapper.readValue(is, java.util.Map.class);
+
+            // Obtenemos el array que está dentro de "peliculas"
+            java.util.List<?> listaPeliculas = (java.util.List<?>) root.get("peliculas");
+
+            // Convertimos la lista genérica a una lista de Pelicula
+            java.util.List<Pelicula> peliculasLeidas = new java.util.ArrayList<>();
+            for (Object obj : listaPeliculas) {
+                // Cada elemento es un Map<String, Object>, lo convertimos directamente
+                Pelicula p = mapper.convertValue(obj, Pelicula.class);
+                peliculasLeidas.add(p);
+            }
+
+            // Cargamos las películas en la ListView
+            peliculas.setAll(peliculasLeidas);
+
+            if (!peliculas.isEmpty()) {
+                ListView.getSelectionModel().select(0);
+                mostrarPelicula(peliculas.get(0));
+            }
+
 
         }catch (Exception e){
             mostrarError("Error al importar JSON", e.getMessage());
